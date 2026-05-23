@@ -58,12 +58,6 @@ const callColumns: Column<CallScorecard>[] = [
   { key: "startDate", label: "Start Date" },
   { key: "totalTicketsReceived", label: "Tickets Recv", align: "right" },
   { key: "totalTicketsClosed", label: "Tickets Closed", align: "right" },
-  {
-    key: "averageTicketsDay",
-    label: "Avg/Day",
-    align: "right",
-    render: (val) => (val as number).toFixed(1),
-  },
   { key: "messagesReceived", label: "Msgs Recv", align: "right" },
   { key: "messagesSent", label: "Msgs Sent", align: "right" },
 ];
@@ -181,11 +175,8 @@ export default function DashboardPage() {
     const totalTicketsClosed = calls.reduce((s, r) => s + r.totalTicketsClosed, 0);
     const totalMsgsSent = calls.reduce((s, r) => s + r.messagesSent, 0);
     const totalMsgsRecv = calls.reduce((s, r) => s + r.messagesReceived, 0);
-    const avgTicketsDay = calls.length > 0
-      ? calls.reduce((s, r) => s + r.averageTicketsDay, 0) / calls.length
-      : 0;
     return {
-      totalTicketsRecv, totalTicketsClosed, totalMsgsSent, totalMsgsRecv, avgTicketsDay,
+      totalTicketsRecv, totalTicketsClosed, totalMsgsSent, totalMsgsRecv,
       closeRate: pct(totalTicketsClosed, totalTicketsRecv),
     };
   }, [data]);
@@ -377,7 +368,6 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                 <KpiCard label="Tickets Received" value={emailsKpis.totalTicketsRecv.toLocaleString()} />
                 <KpiCard label="Tickets Closed" value={emailsKpis.totalTicketsClosed.toLocaleString()} subtitle={emailsKpis.closeRate} trend="up" />
-                <KpiCard label="Avg Tickets / Day" value={emailsKpis.avgTicketsDay.toFixed(1)} />
                 <KpiCard label="Messages Sent" value={emailsKpis.totalMsgsSent.toLocaleString()} />
                 <KpiCard label="Messages Received" value={emailsKpis.totalMsgsRecv.toLocaleString()} />
               </div>

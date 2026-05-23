@@ -23,7 +23,6 @@ function pivotByWeek(data: CallScorecard[]) {
       totals: {
         ticketsReceived: number;
         ticketsClosed: number;
-        avgTicketsDay: number;
         msgReceived: number;
         msgSent: number;
         count: number;
@@ -49,7 +48,6 @@ function pivotByWeek(data: CallScorecard[]) {
         totals: {
           ticketsReceived: 0,
           ticketsClosed: 0,
-          avgTicketsDay: 0,
           msgReceived: 0,
           msgSent: 0,
           count: 0,
@@ -60,7 +58,6 @@ function pivotByWeek(data: CallScorecard[]) {
     const week = weekMap.get(key)!;
     week.totals.ticketsReceived += row.totalTicketsReceived;
     week.totals.ticketsClosed += row.totalTicketsClosed;
-    week.totals.avgTicketsDay += row.averageTicketsDay;
     week.totals.msgReceived += row.messagesReceived;
     week.totals.msgSent += row.messagesSent;
     week.totals.count += 1;
@@ -182,9 +179,6 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
                 Tix Closed
               </th>
               <th className="px-3 py-2 text-right font-medium text-gray-500 bg-gray-50 whitespace-nowrap">
-                Avg/Day
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-gray-500 bg-gray-50 whitespace-nowrap">
                 Msg Recv
               </th>
               <th className="px-3 py-2 text-right font-medium text-gray-500 bg-gray-50 border-r border-gray-200 whitespace-nowrap">
@@ -222,11 +216,6 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
                 </td>
                 <td className="px-3 py-2 text-right text-gray-900 font-medium tabular-nums">
                   {week.totals.ticketsClosed}
-                </td>
-                <td className="px-3 py-2 text-right text-gray-700 tabular-nums">
-                  {week.totals.count > 0
-                    ? (week.totals.avgTicketsDay / week.totals.count).toFixed(1)
-                    : "0"}
                 </td>
                 <td className="px-3 py-2 text-right text-gray-700 tabular-nums">
                   {week.totals.msgReceived}

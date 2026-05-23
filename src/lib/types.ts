@@ -30,7 +30,6 @@ export interface CallScorecard {
   endDate: string;
   totalTicketsReceived: number;
   totalTicketsClosed: number;
-  averageTicketsDay: number;
   messagesReceived: number;
   messagesSent: number;
 }
