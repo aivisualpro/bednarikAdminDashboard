@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 
 interface ChartSectionProps {
@@ -43,7 +44,7 @@ export default function ChartSection({
       <ResponsiveContainer width="100%" height={height}>
         <BarChart
           data={data}
-          margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+          margin={{ top: 20, right: 8, left: 0, bottom: 4 }}
           barCategoryGap="20%"
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
@@ -82,7 +83,14 @@ export default function ChartSection({
               fill={bar.color}
               radius={[3, 3, 0, 0]}
               maxBarSize={40}
-            />
+            >
+              <LabelList
+                dataKey={bar.dataKey}
+                position="top"
+                style={{ fontSize: 10, fill: "#6B7280", fontWeight: 500 }}
+                formatter={(v: number) => (v > 0 ? v.toLocaleString() : "")}
+              />
+            </Bar>
           ))}
         </BarChart>
       </ResponsiveContainer>
