@@ -227,7 +227,7 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
         <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4 sm:gap-6">
             <h1 className="text-lg font-semibold text-gray-900">
