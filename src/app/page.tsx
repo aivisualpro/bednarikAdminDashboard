@@ -11,6 +11,7 @@ import CallsScorecardTable from "@/components/CallsScorecardTable";
 import CallsTrendChart from "@/components/CallsTrendChart";
 import UserSummaryTable from "@/components/UserSummaryTable";
 import CompanyActivity from "@/components/CompanyActivity";
+import EmailUserSummaryTable from "@/components/EmailUserSummaryTable";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatMinutes(totalSeconds: number): string {
@@ -406,6 +407,7 @@ export default function DashboardPage() {
                 userData={data.calls}
                 companyData={data.companyEmails}
               />
+              <EmailUserSummaryTable data={data.calls} />
             </section>
           </>
         )}
