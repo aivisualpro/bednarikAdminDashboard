@@ -421,20 +421,6 @@ export default function DashboardPage() {
                 data={data.calls}
               />
             </section>
-
-            {/* Detail Tables */}
-            <section className="space-y-4">
-              <DataTable<EmailScorecard>
-                title="Call & Text Details (Raw)"
-                columns={emailColumns}
-                data={data.emails}
-              />
-              <DataTable<CallScorecard>
-                title="Ticket & Message Details (Raw)"
-                columns={callColumns}
-                data={data.calls}
-              />
-            </section>
           </>
         )}
       </main>
