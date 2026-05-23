@@ -8,6 +8,7 @@ import ChartSection from "@/components/ChartSection";
 import DateRangePicker from "@/components/DateRangePicker";
 import ScorecardTable from "@/components/ScorecardTable";
 import CallsScorecardTable from "@/components/CallsScorecardTable";
+import UserSummaryTable from "@/components/UserSummaryTable";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatMinutes(totalSeconds: number): string {
@@ -376,6 +377,10 @@ export default function DashboardPage() {
 
             {/* Scorecard Tables */}
             <section className="space-y-4">
+              <UserSummaryTable
+                title="User Summary"
+                data={data.emails}
+              />
               <CallsScorecardTable
                 title="Call & Text Scorecard"
                 data={data.emails}
