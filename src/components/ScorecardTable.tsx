@@ -145,7 +145,7 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
               </th>
               {/* Totals group */}
               <th
-                colSpan={5}
+                colSpan={4}
                 className="px-3 py-2 text-center font-semibold bg-gray-100 text-gray-700 border-b border-r border-gray-200"
               >
                 Totals
