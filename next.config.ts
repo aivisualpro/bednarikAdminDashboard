@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      { source: "/calls", destination: "/" },
+      { source: "/email", destination: "/" },
+    ];
+  },
 };
 
 export default nextConfig;

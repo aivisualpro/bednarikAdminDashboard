@@ -124,8 +124,14 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search);
     const qFrom = params.get("dateFrom");
     const qTo = params.get("dateTo");
-    const qTab = params.get("tab");
-    if (qTab === "calls" || qTab === "emails") setActiveTab(qTab);
+    // Read tab from URL path or query param
+    const path = window.location.pathname;
+    if (path === "/email") setActiveTab("emails");
+    else if (path === "/calls") setActiveTab("calls");
+    else {
+      const qTab = params.get("tab");
+      if (qTab === "calls" || qTab === "emails") setActiveTab(qTab);
+    }
     if (qFrom && qTo) {
       const toIso = (d: string) => {
         const slash = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -231,7 +237,12 @@ export default function DashboardPage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    const url = tab.id === "calls" ? "/calls" : "/email";
+                    const search = window.location.search;
+                    window.history.pushState(null, "", url + search);
+                  }}
                   className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
                     activeTab === tab.id
                       ? "bg-white text-gray-900 shadow-sm"
