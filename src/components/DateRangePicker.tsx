@@ -100,8 +100,8 @@ export default function DateRangePicker({
   loading,
 }: DateRangePickerProps) {
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <label
           htmlFor="rangeStart"
           className="text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -114,7 +114,7 @@ export default function DateRangePicker({
           onChange={onDateFromChange}
         />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <label
           htmlFor="rangeEnd"
           className="text-xs font-medium text-gray-500 uppercase tracking-wider"

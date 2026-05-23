@@ -220,7 +220,7 @@ export default function DashboardPage() {
     <div className="flex-1 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
-        <div className="max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between flex-wrap gap-4">
+        <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">
               Admin Scorecard
@@ -238,7 +238,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-6 py-6 space-y-6">
+      <main className="flex-1 w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -300,7 +300,7 @@ export default function DashboardPage() {
           <>
             {/* KPI Cards */}
             <section>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                 <KpiCard
                   label="Total Calls"
                   value={kpis.totalCalls.toLocaleString()}
@@ -351,7 +351,7 @@ export default function DashboardPage() {
             </section>
 
             {/* Charts */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <ChartSection
                 title="Calls Breakdown by User"
                 data={callsChartData}
@@ -404,8 +404,8 @@ export default function DashboardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 py-4">
-        <div className="max-w-[1440px] mx-auto px-6">
+      <footer className="border-t border-gray-100 py-3 sm:py-4">
+        <div className="px-3 sm:px-4 lg:px-6">
           <p className="text-xs text-gray-400">
             Admin Scorecard Dashboard ·{" "}
             {data
