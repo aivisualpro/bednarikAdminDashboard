@@ -351,7 +351,7 @@ export default function DashboardPage() {
             {/* Tables */}
             <section className="space-y-4">
               <UserSummaryTable
-                title="Activities"
+                title="Activities by Users"
                 data={data.emails}
                 prevData={prevData?.emails}
               />
