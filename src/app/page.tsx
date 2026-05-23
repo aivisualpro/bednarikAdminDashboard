@@ -67,11 +67,28 @@ const callColumns: Column<CallScorecard>[] = [
 ];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Calculate the previous period of equal duration.
+ * e.g. if selected is Jan 15 → Mar 15 (59 days), prev is Nov 16 → Jan 14.
+ */
+function getPreviousPeriod(from: string, to: string) {
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+  const durationMs = toDate.getTime() - fromDate.getTime();
+  const prevTo = new Date(fromDate.getTime() - 86400000); // day before from
+  const prevFrom = new Date(prevTo.getTime() - durationMs);
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { from: fmt(prevFrom), to: fmt(prevTo) };
+}
+
 export default function DashboardPage() {
   const defaults = getDefaultDates();
   const [dateFrom, setDateFrom] = useState(defaults.from);
   const [dateTo, setDateTo] = useState(defaults.to);
   const [data, setData] = useState<ScorecardResponse | null>(null);
+  const [prevData, setPrevData] = useState<ScorecardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoFetched = useRef(false);
@@ -80,15 +97,23 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `/api/scorecard?dateFrom=${dateFrom}&dateTo=${dateTo}`
-      );
+      const prev = getPreviousPeriod(dateFrom, dateTo);
+      const [res, prevRes] = await Promise.all([
+        fetch(`/api/scorecard?dateFrom=${dateFrom}&dateTo=${dateTo}`),
+        fetch(`/api/scorecard?dateFrom=${prev.from}&dateTo=${prev.to}`),
+      ]);
       if (!res.ok) {
         const body = await res.json();
         throw new Error(body.error || "Failed to fetch data");
       }
       const json: ScorecardResponse = await res.json();
       setData(json);
+      if (prevRes.ok) {
+        const prevJson: ScorecardResponse = await prevRes.json();
+        setPrevData(prevJson);
+      } else {
+        setPrevData(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -380,6 +405,7 @@ export default function DashboardPage() {
               <UserSummaryTable
                 title="Activities"
                 data={data.emails}
+                prevData={prevData?.emails}
               />
               <CallsScorecardTable
                 title="Call & Text Scorecard"

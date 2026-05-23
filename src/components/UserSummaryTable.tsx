@@ -5,6 +5,7 @@ import Image from "next/image";
 
 interface UserSummaryTableProps {
   data: EmailScorecard[];
+  prevData?: EmailScorecard[];
   title: string;
 }
 
@@ -25,7 +26,7 @@ interface UserRow {
   sentMessages: number;
 }
 
-function aggregateByUser(data: EmailScorecard[]): UserRow[] {
+function aggregateByUser(data: EmailScorecard[]): Map<string, UserRow> {
   const map = new Map<string, UserRow>();
 
   for (const row of data) {
@@ -47,12 +48,42 @@ function aggregateByUser(data: EmailScorecard[]): UserRow[] {
     u.answeredCalls += row.callsAnsweredTotal;
     u.timeOnCalls += row.totalTimeOnCalls;
     u.sentMessages += row.textSentTotal;
-    // Keep the first non-empty image
     if (!u.image && row.image) u.image = row.image;
   }
 
-  return Array.from(map.values()).sort((a, b) =>
-    a.user.localeCompare(b.user)
+  return map;
+}
+
+/**
+ * Calculate percentage change and return trend indicator
+ */
+function TrendBadge({ current, previous }: { current: number; previous: number }) {
+  if (previous === 0 && current === 0) {
+    return <span className="text-gray-300 text-xs">—</span>;
+  }
+  if (previous === 0) {
+    return (
+      <span className="text-green-600 text-xs font-medium whitespace-nowrap">
+        ↑ new
+      </span>
+    );
+  }
+
+  const pctChange = Math.round(((current - previous) / previous) * 100);
+
+  if (pctChange === 0) {
+    return <span className="text-gray-400 text-xs">—</span>;
+  }
+
+  const isUp = pctChange > 0;
+  return (
+    <span
+      className={`text-xs font-medium whitespace-nowrap ${
+        isUp ? "text-green-600" : "text-red-500"
+      }`}
+    >
+      {isUp ? "↑" : "↓"} {Math.abs(pctChange)}%
+    </span>
   );
 }
 
@@ -77,7 +108,6 @@ function UserAvatar({ src, name }: { src: string; name: string }) {
     );
   }
 
-  // Fallback: initials avatar
   return (
     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
       <span className="text-xs font-medium text-gray-500">{initials}</span>
@@ -87,9 +117,15 @@ function UserAvatar({ src, name }: { src: string; name: string }) {
 
 export default function UserSummaryTable({
   data,
+  prevData,
   title,
 }: UserSummaryTableProps) {
-  const rows = aggregateByUser(data);
+  const currentMap = aggregateByUser(data);
+  const rows = Array.from(currentMap.values()).sort((a, b) =>
+    a.user.localeCompare(b.user)
+  );
+
+  const prevMap = prevData ? aggregateByUser(prevData) : null;
 
   if (rows.length === 0) {
     return (
@@ -113,6 +149,19 @@ export default function UserSummaryTable({
     }),
     { totalCalls: 0, outgoingCalls: 0, answeredCalls: 0, timeOnCalls: 0, sentMessages: 0 }
   );
+
+  const prevTotals = prevMap
+    ? Array.from(prevMap.values()).reduce(
+        (acc, r) => ({
+          totalCalls: acc.totalCalls + r.totalCalls,
+          outgoingCalls: acc.outgoingCalls + r.outgoingCalls,
+          answeredCalls: acc.answeredCalls + r.answeredCalls,
+          timeOnCalls: acc.timeOnCalls + r.timeOnCalls,
+          sentMessages: acc.sentMessages + r.sentMessages,
+        }),
+        { totalCalls: 0, outgoingCalls: 0, answeredCalls: 0, timeOnCalls: 0, sentMessages: 0 }
+      )
+    : null;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -144,34 +193,62 @@ export default function UserSummaryTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.user}
-                className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
-              >
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="flex items-center gap-3">
-                    <UserAvatar src={row.image} name={row.user} />
-                    <span className="text-gray-900 font-medium">{row.user}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right text-gray-700 tabular-nums">
-                  {row.totalCalls.toLocaleString()}
-                </td>
-                <td className="px-4 py-3 text-right text-gray-700 tabular-nums">
-                  {row.outgoingCalls.toLocaleString()}
-                </td>
-                <td className="px-4 py-3 text-right text-gray-700 tabular-nums">
-                  {row.answeredCalls.toLocaleString()}
-                </td>
-                <td className="px-4 py-3 text-right text-gray-700 tabular-nums whitespace-nowrap">
-                  {formatTime(row.timeOnCalls)}
-                </td>
-                <td className="px-4 py-3 text-right text-gray-700 tabular-nums">
-                  {row.sentMessages.toLocaleString()}
-                </td>
-              </tr>
-            ))}
+            {rows.map((row) => {
+              const prev = prevMap?.get(row.user);
+              return (
+                <tr
+                  key={row.user}
+                  className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                >
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <UserAvatar src={row.image} name={row.user} />
+                      <span className="text-gray-900 font-medium">{row.user}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-gray-700">{row.totalCalls.toLocaleString()}</span>
+                      {prev !== undefined && (
+                        <TrendBadge current={row.totalCalls} previous={prev?.totalCalls ?? 0} />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-gray-700">{row.outgoingCalls.toLocaleString()}</span>
+                      {prev !== undefined && (
+                        <TrendBadge current={row.outgoingCalls} previous={prev?.outgoingCalls ?? 0} />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-gray-700">{row.answeredCalls.toLocaleString()}</span>
+                      {prev !== undefined && (
+                        <TrendBadge current={row.answeredCalls} previous={prev?.answeredCalls ?? 0} />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-gray-700 whitespace-nowrap">{formatTime(row.timeOnCalls)}</span>
+                      {prev !== undefined && (
+                        <TrendBadge current={row.timeOnCalls} previous={prev?.timeOnCalls ?? 0} />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-gray-700">{row.sentMessages.toLocaleString()}</span>
+                      {prev !== undefined && (
+                        <TrendBadge current={row.sentMessages} previous={prev?.sentMessages ?? 0} />
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
             {/* Totals row */}
             <tr className="bg-gray-50 border-t border-gray-200 font-semibold">
               <td className="px-4 py-3 text-gray-900">
@@ -180,20 +257,45 @@ export default function UserSummaryTable({
                   <span>Total</span>
                 </div>
               </td>
-              <td className="px-4 py-3 text-right text-gray-900 tabular-nums">
-                {totals.totalCalls.toLocaleString()}
+              <td className="px-4 py-3 text-right tabular-nums">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-gray-900">{totals.totalCalls.toLocaleString()}</span>
+                  {prevTotals && (
+                    <TrendBadge current={totals.totalCalls} previous={prevTotals.totalCalls} />
+                  )}
+                </div>
               </td>
-              <td className="px-4 py-3 text-right text-gray-900 tabular-nums">
-                {totals.outgoingCalls.toLocaleString()}
+              <td className="px-4 py-3 text-right tabular-nums">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-gray-900">{totals.outgoingCalls.toLocaleString()}</span>
+                  {prevTotals && (
+                    <TrendBadge current={totals.outgoingCalls} previous={prevTotals.outgoingCalls} />
+                  )}
+                </div>
               </td>
-              <td className="px-4 py-3 text-right text-gray-900 tabular-nums">
-                {totals.answeredCalls.toLocaleString()}
+              <td className="px-4 py-3 text-right tabular-nums">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-gray-900">{totals.answeredCalls.toLocaleString()}</span>
+                  {prevTotals && (
+                    <TrendBadge current={totals.answeredCalls} previous={prevTotals.answeredCalls} />
+                  )}
+                </div>
               </td>
-              <td className="px-4 py-3 text-right text-gray-900 tabular-nums whitespace-nowrap">
-                {formatTime(totals.timeOnCalls)}
+              <td className="px-4 py-3 text-right tabular-nums">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-gray-900 whitespace-nowrap">{formatTime(totals.timeOnCalls)}</span>
+                  {prevTotals && (
+                    <TrendBadge current={totals.timeOnCalls} previous={prevTotals.timeOnCalls} />
+                  )}
+                </div>
               </td>
-              <td className="px-4 py-3 text-right text-gray-900 tabular-nums">
-                {totals.sentMessages.toLocaleString()}
+              <td className="px-4 py-3 text-right tabular-nums">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-gray-900">{totals.sentMessages.toLocaleString()}</span>
+                  {prevTotals && (
+                    <TrendBadge current={totals.sentMessages} previous={prevTotals.sentMessages} />
+                  )}
+                </div>
               </td>
             </tr>
           </tbody>
