@@ -56,9 +56,9 @@ export default function DataTable<T extends object>({
           <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
         </div>
       )}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-white">
             <tr className="border-b border-gray-100">
               {columns.map((col) => (
                 <th

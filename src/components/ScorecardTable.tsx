@@ -134,10 +134,10 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
       <div className="px-5 py-3 border-b border-gray-100">
         <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
         <table className="w-full text-xs">
           {/* ── Top group headers ─────────────────────────────── */}
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr>
               {/* Date columns — no group header */}
               <th

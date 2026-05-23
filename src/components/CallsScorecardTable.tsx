@@ -138,9 +138,9 @@ export default function CallsScorecardTable({
       <div className="px-5 py-3 border-b border-gray-100">
         <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
         <table className="w-full text-xs">
-          <thead>
+          <thead className="sticky top-0 z-10">
             {/* Group headers */}
             <tr>
               <th
