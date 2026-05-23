@@ -144,8 +144,8 @@ export default function DashboardPage() {
       const isoTo = toIso(qTo);
       setDateFrom(isoFrom);
       setDateTo(isoTo);
-      autoFetched.current = true;
     }
+    autoFetched.current = true;
   }, []);
 
   // Auto-fetch after URL params are set
