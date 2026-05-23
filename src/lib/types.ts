@@ -1,0 +1,41 @@
+// ── AdminScorecardEmails sheet (call & text metrics) ──────────────────────────
+export interface EmailScorecard {
+  _id: string;
+  startDate: string;
+  endDate: string;
+  type: string;
+  userId: string;
+  user: string;
+  callsTotal: number;
+  callsMissed: number;
+  callsMissedUnanswered: number;
+  callsMissedAbandoned: number;
+  callsAnsweredTotal: number;
+  callsAnsweredTeamMember: number;
+  callsAnsweredSona: number;
+  callsOutbound: number;
+  totalTimeOnCalls: number;
+  textSentTotal: number;
+  textReceivedTotal: number;
+}
+
+// ── AdminScorecardCalls sheet (ticket & message metrics) ──────────────────────
+export interface CallScorecard {
+  _id: string;
+  type: string;
+  userId: string;
+  user: string;
+  startDate: string;
+  endDate: string;
+  totalTicketsReceived: number;
+  totalTicketsClosed: number;
+  averageTicketsDay: number;
+  messagesReceived: number;
+  messagesSent: number;
+}
+
+// ── API response ──────────────────────────────────────────────────────────────
+export interface ScorecardResponse {
+  emails: EmailScorecard[];
+  calls: CallScorecard[];
+}
