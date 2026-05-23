@@ -86,40 +86,47 @@ function isInDateRange(
 // Actual column order: _id, startDate, endDate, type, userId, user,
 //   totalTicketsReceived, totalTicketsClosed,
 //   messagesReceived, messagesSent
-export async function fetchEmailScorecards(
-  dateFrom: string,
-  dateTo: string
-): Promise<CallScorecard[]> {
+
+function mapEmailRow(row: string[]): CallScorecard {
+  return {
+    _id: row[0] || "",
+    startDate: row[1] || "",
+    endDate: row[2] || "",
+    type: row[3] || "",
+    userId: row[4] || "",
+    user: row[5] || "",
+    totalTicketsReceived: parseNumber(row[6]),
+    totalTicketsClosed: parseNumber(row[7]),
+    messagesReceived: parseNumber(row[8]),
+    messagesSent: parseNumber(row[9]),
+  };
+}
+
+async function fetchAllEmailRows(dateFrom: string, dateTo: string) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: "AdminScorecardEmails!A:J",
   });
-
   const rows = res.data.values;
-  if (!rows || rows.length < 2) return [];
+  if (!rows || rows.length < 2) return { user: [], company: [] };
 
-  // type is at index 3, startDate is at index 1
-  // Only include rows where type="User" (exclude Company aggregates)
-  return rows
-    .slice(1)
-    .filter(
-      (row) =>
-        (row[3] || "").toLowerCase() === "user" &&
-        isInDateRange(row[1], dateFrom, dateTo)
-    )
-    .map((row) => ({
-      _id: row[0] || "",
-      startDate: row[1] || "",
-      endDate: row[2] || "",
-      type: row[3] || "",
-      userId: row[4] || "",
-      user: row[5] || "",
-      totalTicketsReceived: parseNumber(row[6]),
-      totalTicketsClosed: parseNumber(row[7]),
-      messagesReceived: parseNumber(row[8]),
-      messagesSent: parseNumber(row[9]),
-    }));
+  const filtered = rows.slice(1).filter((row) => isInDateRange(row[1], dateFrom, dateTo));
+
+  return {
+    user: filtered.filter((r) => (r[3] || "").toLowerCase() === "user").map(mapEmailRow),
+    company: filtered.filter((r) => (r[3] || "").toLowerCase() === "company").map(mapEmailRow),
+  };
+}
+
+export async function fetchEmailScorecards(dateFrom: string, dateTo: string): Promise<CallScorecard[]> {
+  const { user } = await fetchAllEmailRows(dateFrom, dateTo);
+  return user;
+}
+
+export async function fetchCompanyEmailScorecards(dateFrom: string, dateTo: string): Promise<CallScorecard[]> {
+  const { company } = await fetchAllEmailRows(dateFrom, dateTo);
+  return company;
 }
 
 // ── Fetch AdminScorecardCalls (call & text data) ──────────────────────────────

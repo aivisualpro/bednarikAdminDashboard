@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchEmailScorecards, fetchCallScorecards, fetchCompanyScorecards } from "@/lib/sheets";
+import { fetchEmailScorecards, fetchCallScorecards, fetchCompanyScorecards, fetchCompanyEmailScorecards } from "@/lib/sheets";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -23,13 +23,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [calls, emails, company] = await Promise.all([
+    const [calls, emails, company, companyEmails] = await Promise.all([
       fetchEmailScorecards(dateFrom, dateTo),
       fetchCallScorecards(dateFrom, dateTo),
       fetchCompanyScorecards(dateFrom, dateTo),
+      fetchCompanyEmailScorecards(dateFrom, dateTo),
     ]);
 
-    return NextResponse.json({ emails, calls, company });
+    return NextResponse.json({ emails, calls, company, companyEmails });
   } catch (err) {
     console.error("Scorecard API error:", err);
     return NextResponse.json(

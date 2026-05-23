@@ -1,93 +1,18 @@
 "use client";
 
+import React from "react";
+
 import type { CallScorecard } from "@/lib/types";
+import Image from "next/image";
 
 interface ScorecardTableProps {
-  data: CallScorecard[];
   title: string;
-}
-
-// Group data by week (startDate) and pivot users into columns
-function pivotByWeek(data: CallScorecard[]) {
-  // Get unique users
-  const usersSet = new Set<string>();
-  data.forEach((r) => usersSet.add(r.user || "Unknown"));
-  const users = Array.from(usersSet).sort();
-
-  // Group by startDate (week)
-  const weekMap = new Map<
-    string,
-    {
-      startDate: string;
-      endDate: string;
-      totals: {
-        ticketsReceived: number;
-        ticketsClosed: number;
-        msgReceived: number;
-        msgSent: number;
-        count: number;
-      };
-      byUser: Record<
-        string,
-        {
-          ticketsReceived: number;
-          ticketsClosed: number;
-          msgReceived: number;
-          msgSent: number;
-        }
-      >;
-    }
-  >();
-
-  for (const row of data) {
-    const key = row.startDate;
-    if (!weekMap.has(key)) {
-      weekMap.set(key, {
-        startDate: row.startDate,
-        endDate: row.endDate,
-        totals: {
-          ticketsReceived: 0,
-          ticketsClosed: 0,
-          msgReceived: 0,
-          msgSent: 0,
-          count: 0,
-        },
-        byUser: {},
-      });
-    }
-    const week = weekMap.get(key)!;
-    week.totals.ticketsReceived += row.totalTicketsReceived;
-    week.totals.ticketsClosed += row.totalTicketsClosed;
-    week.totals.msgReceived += row.messagesReceived;
-    week.totals.msgSent += row.messagesSent;
-    week.totals.count += 1;
-
-    const userName = row.user || "Unknown";
-    if (!week.byUser[userName]) {
-      week.byUser[userName] = {
-        ticketsReceived: 0,
-        ticketsClosed: 0,
-        msgReceived: 0,
-        msgSent: 0,
-      };
-    }
-    week.byUser[userName].ticketsReceived += row.totalTicketsReceived;
-    week.byUser[userName].ticketsClosed += row.totalTicketsClosed;
-    week.byUser[userName].msgReceived += row.messagesReceived;
-    week.byUser[userName].msgSent += row.messagesSent;
-  }
-
-  // Sort by date descending
-  const weeks = Array.from(weekMap.values()).sort(
-    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-  );
-
-  return { users, weeks };
+  userData: CallScorecard[];
+  companyData: CallScorecard[];
 }
 
 function formatDate(d: string) {
   if (!d) return "—";
-  // If already in MM/DD/YYYY format, return as-is
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) return d;
   try {
     const date = new Date(d);
@@ -100,7 +25,86 @@ function formatDate(d: string) {
   }
 }
 
-// User column color palette — muted professional tones
+function UserAvatar({ src, name }: { src: string; name: string }) {
+  const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  if (src) {
+    return (
+      <Image src={src} alt={name} width={20} height={20}
+        className="w-5 h-5 rounded-full object-cover flex-shrink-0 inline-block mr-1" unoptimized />
+    );
+  }
+  return (
+    <span className="w-5 h-5 rounded-full bg-gray-200 inline-flex items-center justify-center flex-shrink-0 mr-1">
+      <span className="text-[8px] font-medium text-gray-500">{initials}</span>
+    </span>
+  );
+}
+
+// Build weekly pivot
+interface WeekData {
+  startDate: string;
+  endDate: string;
+  company: { totalTix: number; avgDay: number; msgsRecv: number; msgsSent: number };
+  users: Record<string, { closed: number; msgs: number; day: number; hour: number }>;
+}
+
+function pivotByWeek(userData: CallScorecard[], companyData: CallScorecard[]) {
+  const users = Array.from(new Set(userData.map((r) => r.user).filter(Boolean))).sort();
+
+  const weekMap = new Map<string, WeekData>();
+
+  // Process company rows
+  for (const row of companyData) {
+    const key = row.startDate;
+    if (!weekMap.has(key)) {
+      weekMap.set(key, {
+        startDate: row.startDate,
+        endDate: row.endDate,
+        company: { totalTix: 0, avgDay: 0, msgsRecv: 0, msgsSent: 0 },
+        users: {},
+      });
+    }
+    const w = weekMap.get(key)!;
+    w.company.totalTix += row.totalTicketsReceived;
+    w.company.msgsRecv += row.messagesReceived;
+    w.company.msgsSent += row.messagesSent;
+  }
+
+  // Calculate avg/day for company
+  for (const w of weekMap.values()) {
+    w.company.avgDay = w.company.totalTix / 5;
+  }
+
+  // Process user rows
+  for (const row of userData) {
+    const key = row.startDate;
+    if (!weekMap.has(key)) {
+      weekMap.set(key, {
+        startDate: row.startDate,
+        endDate: row.endDate,
+        company: { totalTix: 0, avgDay: 0, msgsRecv: 0, msgsSent: 0 },
+        users: {},
+      });
+    }
+    const w = weekMap.get(key)!;
+    const userName = row.user || "Unknown";
+    if (!w.users[userName]) {
+      w.users[userName] = { closed: 0, msgs: 0, day: 0, hour: 0 };
+    }
+    const totalMsgs = row.messagesReceived + row.messagesSent;
+    w.users[userName].closed += row.totalTicketsClosed;
+    w.users[userName].msgs += totalMsgs;
+    w.users[userName].day = w.users[userName].msgs / 5;
+    w.users[userName].hour = w.users[userName].msgs / 40;
+  }
+
+  const weeks = Array.from(weekMap.values()).sort(
+    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+  );
+
+  return { users, weeks };
+}
+
 const userColors = [
   { bg: "bg-blue-50", header: "bg-blue-100 text-blue-800" },
   { bg: "bg-amber-50", header: "bg-amber-100 text-amber-800" },
@@ -112,8 +116,15 @@ const userColors = [
   { bg: "bg-indigo-50", header: "bg-indigo-100 text-indigo-800" },
 ];
 
-export default function ScorecardTable({ data, title }: ScorecardTableProps) {
-  if (data.length === 0) {
+// Get user images from userData
+function getUserImages(data: CallScorecard[]): Map<string, string> {
+  const map = new Map<string, string>();
+  // CallScorecard doesn't have image field; we'll use initials only
+  return map;
+}
+
+export default function ScorecardTable({ title, userData, companyData }: ScorecardTableProps) {
+  if (userData.length === 0 && companyData.length === 0) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">{title}</h3>
@@ -124,7 +135,8 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
     );
   }
 
-  const { users, weeks } = pivotByWeek(data);
+  const { users, weeks } = pivotByWeek(userData, companyData);
+  getUserImages(userData);
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -133,24 +145,21 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
       </div>
       <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
         <table className="w-full text-xs">
-          {/* ── Top group headers ─────────────────────────────── */}
           <thead className="sticky top-0 z-10">
+            {/* Group headers */}
             <tr>
-              {/* Date columns — no group header */}
               <th
                 colSpan={2}
                 className="px-3 py-2 text-center font-semibold text-gray-500 bg-gray-50 border-b border-r border-gray-200"
               >
                 Period
               </th>
-              {/* Totals group */}
               <th
                 colSpan={4}
-                className="px-3 py-2 text-center font-semibold bg-gray-100 text-gray-700 border-b border-r border-gray-200"
+                className="px-3 py-2 text-center font-semibold bg-gray-900 text-white border-b border-r border-gray-200"
               >
-                Totals
+                Company
               </th>
-              {/* Per-user groups */}
               {users.map((user, i) => (
                 <th
                   key={user}
@@ -159,11 +168,14 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
                     userColors[i % userColors.length].header
                   }`}
                 >
-                  {user}
+                  <span className="inline-flex items-center gap-1">
+                    <UserAvatar src="" name={user} />
+                    {user}
+                  </span>
                 </th>
               ))}
             </tr>
-            {/* ── Sub-headers ──────────────────────────────────── */}
+            {/* Sub-headers */}
             <tr className="border-b border-gray-200">
               <th className="px-3 py-2 text-left font-medium text-gray-500 bg-gray-50 border-r border-gray-100 whitespace-nowrap">
                 Start
@@ -171,69 +183,78 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
               <th className="px-3 py-2 text-left font-medium text-gray-500 bg-gray-50 border-r border-gray-200 whitespace-nowrap">
                 End
               </th>
-              {/* Totals sub-headers */}
-              <th className="px-3 py-2 text-right font-medium text-gray-500 bg-gray-50 whitespace-nowrap">
-                Tix Recv
+              {/* Company sub-headers */}
+              <th className="px-3 py-2 text-center font-medium text-gray-500 bg-gray-50 whitespace-nowrap">
+                Total Tix
               </th>
-              <th className="px-3 py-2 text-right font-medium text-gray-500 bg-gray-50 whitespace-nowrap">
-                Tix Closed
+              <th className="px-3 py-2 text-center font-medium text-gray-500 bg-gray-50 whitespace-nowrap">
+                Avg/Day
               </th>
-              <th className="px-3 py-2 text-right font-medium text-gray-500 bg-gray-50 whitespace-nowrap">
-                Msg Recv
+              <th className="px-3 py-2 text-center font-medium text-gray-500 bg-gray-50 whitespace-nowrap">
+                Msgs/Rec
               </th>
-              <th className="px-3 py-2 text-right font-medium text-gray-500 bg-gray-50 border-r border-gray-200 whitespace-nowrap">
-                Msg Sent
+              <th className="px-3 py-2 text-center font-medium text-gray-500 bg-gray-50 border-r border-gray-200 whitespace-nowrap">
+                Msgs/Sent
               </th>
-              {/* Per-user sub-headers */}
+              {/* User sub-headers */}
               {users.map((user, i) => (
-                <UserSubHeaders
-                  key={user}
-                  colorIdx={i}
-                  isLast={i === users.length - 1}
-                />
+                <React.Fragment key={user}>
+                  <th className={`px-3 py-2 text-center font-medium whitespace-nowrap ${userColors[i % userColors.length].bg}`}>
+                    Closed
+                  </th>
+                  <th className={`px-3 py-2 text-center font-medium whitespace-nowrap ${userColors[i % userColors.length].bg}`}>
+                    Msgs
+                  </th>
+                  <th className={`px-3 py-2 text-center font-medium whitespace-nowrap ${userColors[i % userColors.length].bg}`}>
+                    Day
+                  </th>
+                  <th className={`px-3 py-2 text-center font-medium whitespace-nowrap border-r border-gray-200 ${userColors[i % userColors.length].bg}`}>
+                    Hour
+                  </th>
+                </React.Fragment>
               ))}
             </tr>
           </thead>
-
-          {/* ── Body ───────────────────────────────────────────── */}
           <tbody>
-            {weeks.map((week, wi) => (
-              <tr
-                key={week.startDate}
-                className={`border-b border-gray-50 ${
-                  wi % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                } hover:bg-gray-50/70 transition-colors`}
-              >
-                <td className="px-3 py-2 text-gray-700 whitespace-nowrap border-r border-gray-100">
+            {weeks.map((week) => (
+              <tr key={week.startDate} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                <td className="px-3 py-2 text-gray-700 whitespace-nowrap border-r border-gray-100 tabular-nums">
                   {formatDate(week.startDate)}
                 </td>
-                <td className="px-3 py-2 text-gray-700 whitespace-nowrap border-r border-gray-200">
+                <td className="px-3 py-2 text-gray-700 whitespace-nowrap border-r border-gray-200 tabular-nums">
                   {formatDate(week.endDate)}
                 </td>
-                {/* Totals */}
-                <td className="px-3 py-2 text-right text-gray-900 font-medium tabular-nums">
-                  {week.totals.ticketsReceived}
+                {/* Company cells */}
+                <td className="px-3 py-2 text-center text-gray-900 font-medium tabular-nums">
+                  {week.company.totalTix.toLocaleString()}
                 </td>
-                <td className="px-3 py-2 text-right text-gray-900 font-medium tabular-nums">
-                  {week.totals.ticketsClosed}
+                <td className="px-3 py-2 text-center text-gray-500 tabular-nums">
+                  {week.company.avgDay.toFixed(1)}
                 </td>
-                <td className="px-3 py-2 text-right text-gray-700 tabular-nums">
-                  {week.totals.msgReceived}
+                <td className="px-3 py-2 text-center text-gray-700 tabular-nums">
+                  {week.company.msgsRecv.toLocaleString()}
                 </td>
-                <td className="px-3 py-2 text-right text-gray-700 tabular-nums border-r border-gray-200">
-                  {week.totals.msgSent}
+                <td className="px-3 py-2 text-center text-gray-700 tabular-nums border-r border-gray-200">
+                  {week.company.msgsSent.toLocaleString()}
                 </td>
-                {/* Per-user values */}
+                {/* User cells */}
                 {users.map((user, i) => {
-                  const u = week.byUser[user];
-                  const bg = userColors[i % userColors.length].bg;
+                  const u = week.users[user] || { closed: 0, msgs: 0, day: 0, hour: 0 };
                   return (
-                    <UserCells
-                      key={user}
-                      data={u}
-                      bgClass={bg}
-                      isLast={i === users.length - 1}
-                    />
+                    <React.Fragment key={user}>
+                      <td className={`px-3 py-2 text-center tabular-nums ${userColors[i % userColors.length].bg}`}>
+                        {u.closed}
+                      </td>
+                      <td className={`px-3 py-2 text-center tabular-nums ${userColors[i % userColors.length].bg}`}>
+                        {u.msgs.toLocaleString()}
+                      </td>
+                      <td className={`px-3 py-2 text-center text-gray-500 tabular-nums ${userColors[i % userColors.length].bg}`}>
+                        {Math.round(u.day).toLocaleString()}
+                      </td>
+                      <td className={`px-3 py-2 text-center text-gray-500 tabular-nums border-r border-gray-200 ${userColors[i % userColors.length].bg}`}>
+                        {Math.round(u.hour).toLocaleString()}
+                      </td>
+                    </React.Fragment>
                   );
                 })}
               </tr>
@@ -242,87 +263,5 @@ export default function ScorecardTable({ data, title }: ScorecardTableProps) {
         </table>
       </div>
     </div>
-  );
-}
-
-function UserSubHeaders({
-  colorIdx,
-  isLast,
-}: {
-  colorIdx: number;
-  isLast: boolean;
-}) {
-  const c = userColors[colorIdx % userColors.length];
-  const border = isLast ? "" : "border-r border-gray-200";
-  return (
-    <>
-      <th
-        className={`px-2 py-2 text-right font-medium ${c.header} whitespace-nowrap`}
-      >
-        Tix Recv
-      </th>
-      <th
-        className={`px-2 py-2 text-right font-medium ${c.header} whitespace-nowrap`}
-      >
-        Closed
-      </th>
-      <th
-        className={`px-2 py-2 text-right font-medium ${c.header} whitespace-nowrap`}
-      >
-        Msg In
-      </th>
-      <th
-        className={`px-2 py-2 text-right font-medium ${c.header} whitespace-nowrap ${border}`}
-      >
-        Msg Out
-      </th>
-    </>
-  );
-}
-
-function UserCells({
-  data,
-  bgClass,
-  isLast,
-}: {
-  data?: {
-    ticketsReceived: number;
-    ticketsClosed: number;
-    msgReceived: number;
-    msgSent: number;
-  };
-  bgClass: string;
-  isLast: boolean;
-}) {
-  const border = isLast ? "" : "border-r border-gray-200";
-  if (!data) {
-    return (
-      <>
-        <td className={`px-2 py-2 text-right text-gray-300 ${bgClass}`}>0</td>
-        <td className={`px-2 py-2 text-right text-gray-300 ${bgClass}`}>0</td>
-        <td className={`px-2 py-2 text-right text-gray-300 ${bgClass}`}>0</td>
-        <td className={`px-2 py-2 text-right text-gray-300 ${bgClass} ${border}`}>
-          0
-        </td>
-      </>
-    );
-  }
-  return (
-    <>
-      <td className={`px-2 py-2 text-right text-gray-700 tabular-nums ${bgClass}`}>
-        {data.ticketsReceived}
-      </td>
-      <td className={`px-2 py-2 text-right text-gray-700 tabular-nums ${bgClass}`}>
-        {data.ticketsClosed}
-      </td>
-      <td className={`px-2 py-2 text-right text-gray-700 tabular-nums ${bgClass}`}>
-        {data.msgReceived}
-      </td>
-      <td
-        className={`px-2 py-2 text-right text-gray-700 tabular-nums ${bgClass} ${border}`}
-      >
-        {data.msgSent}
-      </td>
-    </>
   );
 }

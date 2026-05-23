@@ -403,7 +403,8 @@ export default function DashboardPage() {
             <section className="space-y-4">
               <ScorecardTable
                 title="Ticket & Message Scorecard"
-                data={data.calls}
+                userData={data.calls}
+                companyData={data.companyEmails}
               />
             </section>
           </>
