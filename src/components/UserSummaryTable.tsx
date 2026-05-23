@@ -140,18 +140,18 @@ export default function UserSummaryTable({ data, prevData, title }: UserSummaryT
     const hour = val / 40;
     return (
       <>
-        <td className="px-2 py-2.5 text-right text-xs text-gray-800 tabular-nums whitespace-nowrap">
-          <div className="flex items-center justify-end gap-1.5">
+        <td className="px-2 py-2.5 text-center text-xs text-gray-800 tabular-nums whitespace-nowrap">
+          <div className="flex items-center justify-center gap-1.5">
             <span>{fmtVal(val, isTime)}</span>
             {showTrend && prevVal !== undefined && (
               <TrendBadge current={val} previous={prevVal} />
             )}
           </div>
         </td>
-        <td className="px-2 py-2.5 text-right text-xs text-gray-500 tabular-nums whitespace-nowrap">
+        <td className="px-2 py-2.5 text-center text-xs text-gray-500 tabular-nums whitespace-nowrap">
           {fmtVal(day, isTime)}
         </td>
-        <td className="px-2 py-2.5 text-right text-xs text-gray-500 tabular-nums whitespace-nowrap border-r border-gray-100">
+        <td className="px-2 py-2.5 text-center text-xs text-gray-500 tabular-nums whitespace-nowrap border-r border-gray-100">
           {fmtVal(hour, isTime)}
         </td>
       </>
@@ -188,13 +188,13 @@ export default function UserSummaryTable({ data, prevData, title }: UserSummaryT
             <tr>
               {METRIC_KEYS.map((m, i) => (
                 <>
-                  <th key={`${m.key}-t`} className={`px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider border-b border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
+                  <th key={`${m.key}-t`} className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
                     Total
                   </th>
-                  <th key={`${m.key}-d`} className={`px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider border-b border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
+                  <th key={`${m.key}-d`} className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
                     Day
                   </th>
-                  <th key={`${m.key}-h`} className={`px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider border-b border-r border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
+                  <th key={`${m.key}-h`} className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-r border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
                     Hour
                   </th>
                 </>
