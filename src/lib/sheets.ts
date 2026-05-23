@@ -83,7 +83,7 @@ function isInDateRange(
 }
 
 // ── Fetch AdminScorecardEmails (ticket & message data) ────────────────────────
-// Actual column order: _id, type, userId, user, startDate, endDate,
+// Actual column order: _id, startDate, endDate, type, userId, user,
 //   totalTicketsReceived, totalTicketsClosed,
 //   messagesReceived, messagesSent
 export async function fetchEmailScorecards(
@@ -99,22 +99,22 @@ export async function fetchEmailScorecards(
   const rows = res.data.values;
   if (!rows || rows.length < 2) return [];
 
-  // type is at index 1, startDate is at index 4
+  // type is at index 3, startDate is at index 1
   // Only include rows where type="User" (exclude Company aggregates)
   return rows
     .slice(1)
     .filter(
       (row) =>
-        (row[1] || "").toLowerCase() === "user" &&
-        isInDateRange(row[4], dateFrom, dateTo)
+        (row[3] || "").toLowerCase() === "user" &&
+        isInDateRange(row[1], dateFrom, dateTo)
     )
     .map((row) => ({
       _id: row[0] || "",
-      type: row[1] || "",
-      userId: row[2] || "",
-      user: row[3] || "",
-      startDate: row[4] || "",
-      endDate: row[5] || "",
+      startDate: row[1] || "",
+      endDate: row[2] || "",
+      type: row[3] || "",
+      userId: row[4] || "",
+      user: row[5] || "",
       totalTicketsReceived: parseNumber(row[6]),
       totalTicketsClosed: parseNumber(row[7]),
       messagesReceived: parseNumber(row[8]),
