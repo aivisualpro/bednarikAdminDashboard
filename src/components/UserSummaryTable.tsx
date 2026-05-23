@@ -2,6 +2,7 @@
 
 import type { EmailScorecard } from "@/lib/types";
 import Image from "next/image";
+import { Fragment } from "react";
 
 interface UserSummaryTableProps {
   data: EmailScorecard[];
@@ -189,17 +190,17 @@ export default function UserSummaryTable({ data, prevData, title }: UserSummaryT
             {/* Sub headers */}
             <tr>
               {METRIC_KEYS.map((m, i) => (
-                <>
-                  <th key={`${m.key}-t`} className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
+                <Fragment key={m.key}>
+                  <th className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
                     Total
                   </th>
-                  <th key={`${m.key}-d`} className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
+                  <th className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
                     Day
                   </th>
-                  <th key={`${m.key}-h`} className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-r border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
+                  <th className={`px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider border-b border-r border-gray-200 ${GROUP_COLORS[i % GROUP_COLORS.length].sub}`}>
                     Hour
                   </th>
-                </>
+                </Fragment>
               ))}
             </tr>
           </thead>
