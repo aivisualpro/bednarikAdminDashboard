@@ -32,6 +32,7 @@ export interface CallScorecard {
   totalTicketsClosed: number;
   messagesReceived: number;
   messagesSent: number;
+  image: string;
 }
 
 // ── API response ──────────────────────────────────────────────────────────────

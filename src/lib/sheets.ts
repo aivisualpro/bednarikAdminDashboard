@@ -85,7 +85,7 @@ function isInDateRange(
 // ── Fetch AdminScorecardEmails (ticket & message data) ────────────────────────
 // Actual column order: _id, startDate, endDate, type, userId, user,
 //   totalTicketsReceived, totalTicketsClosed,
-//   messagesReceived, messagesSent
+//   messagesReceived, messagesSent, image
 
 function mapEmailRow(row: string[]): CallScorecard {
   return {
@@ -99,6 +99,7 @@ function mapEmailRow(row: string[]): CallScorecard {
     totalTicketsClosed: parseNumber(row[7]),
     messagesReceived: parseNumber(row[8]),
     messagesSent: parseNumber(row[9]),
+    image: row[10] || "",
   };
 }
 
@@ -106,7 +107,7 @@ async function fetchAllEmailRows(dateFrom: string, dateTo: string) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: "AdminScorecardEmails!A:J",
+    range: "AdminScorecardEmails!A:K",
   });
   const rows = res.data.values;
   if (!rows || rows.length < 2) return { user: [], company: [] };

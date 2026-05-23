@@ -119,7 +119,11 @@ const userColors = [
 // Get user images from userData
 function getUserImages(data: CallScorecard[]): Map<string, string> {
   const map = new Map<string, string>();
-  // CallScorecard doesn't have image field; we'll use initials only
+  for (const row of data) {
+    if (row.user && row.image && !map.has(row.user)) {
+      map.set(row.user, row.image);
+    }
+  }
   return map;
 }
 
@@ -136,7 +140,7 @@ export default function ScorecardTable({ title, userData, companyData }: Scoreca
   }
 
   const { users, weeks } = pivotByWeek(userData, companyData);
-  getUserImages(userData);
+  const userImages = getUserImages(userData);
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -169,7 +173,7 @@ export default function ScorecardTable({ title, userData, companyData }: Scoreca
                   }`}
                 >
                   <span className="inline-flex items-center gap-1">
-                    <UserAvatar src="" name={user} />
+                    <UserAvatar src={userImages.get(user) || ""} name={user} />
                     {user}
                   </span>
                 </th>
