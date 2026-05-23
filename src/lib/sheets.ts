@@ -128,46 +128,54 @@ export async function fetchEmailScorecards(
 //   callsTotal, callsMissed, callsMissedUnanswered, callsMissedAbandoned,
 //   callsAnsweredTotal, callsAnsweredTeamMember, callsAnsweredSona,
 //   callsOutbound, totalTimeOnCalls, textSentTotal, textReceivedTotal, Image
-export async function fetchCallScorecards(
-  dateFrom: string,
-  dateTo: string
-): Promise<EmailScorecard[]> {
+
+function mapCallRow(row: string[]): EmailScorecard {
+  return {
+    _id: row[0] || "",
+    startDate: row[1] || "",
+    endDate: row[2] || "",
+    type: row[3] || "",
+    userId: row[4] || "",
+    user: row[5] || "",
+    callsTotal: parseNumber(row[6]),
+    callsMissed: parseNumber(row[7]),
+    callsMissedUnanswered: parseNumber(row[8]),
+    callsMissedAbandoned: parseNumber(row[9]),
+    callsAnsweredTotal: parseNumber(row[10]),
+    callsAnsweredTeamMember: parseNumber(row[11]),
+    callsAnsweredSona: parseNumber(row[12]),
+    callsOutbound: parseNumber(row[13]),
+    totalTimeOnCalls: parseDuration(row[14]),
+    textSentTotal: parseNumber(row[15]),
+    textReceivedTotal: parseNumber(row[16]),
+    image: row[17] || "",
+  };
+}
+
+async function fetchAllCallRows(dateFrom: string, dateTo: string) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: "AdminScorecardCalls!A:R",
   });
-
   const rows = res.data.values;
-  if (!rows || rows.length < 2) return [];
+  if (!rows || rows.length < 2) return { user: [], company: [] };
 
-  // type is at index 3, startDate is at index 1
-  // Only include rows where type="User" (exclude Company aggregates)
-  return rows
-    .slice(1)
-    .filter(
-      (row) =>
-        (row[3] || "").toLowerCase() === "user" &&
-        isInDateRange(row[1], dateFrom, dateTo)
-    )
-    .map((row) => ({
-      _id: row[0] || "",
-      startDate: row[1] || "",
-      endDate: row[2] || "",
-      type: row[3] || "",
-      userId: row[4] || "",
-      user: row[5] || "",
-      callsTotal: parseNumber(row[6]),
-      callsMissed: parseNumber(row[7]),
-      callsMissedUnanswered: parseNumber(row[8]),
-      callsMissedAbandoned: parseNumber(row[9]),
-      callsAnsweredTotal: parseNumber(row[10]),
-      callsAnsweredTeamMember: parseNumber(row[11]),
-      callsAnsweredSona: parseNumber(row[12]),
-      callsOutbound: parseNumber(row[13]),
-      totalTimeOnCalls: parseDuration(row[14]),
-      textSentTotal: parseNumber(row[15]),
-      textReceivedTotal: parseNumber(row[16]),
-      image: row[17] || "",
-    }));
+  const filtered = rows.slice(1).filter((row) => isInDateRange(row[1], dateFrom, dateTo));
+
+  return {
+    user: filtered.filter((r) => (r[3] || "").toLowerCase() === "user").map(mapCallRow),
+    company: filtered.filter((r) => (r[3] || "").toLowerCase() === "company").map(mapCallRow),
+  };
 }
+
+export async function fetchCallScorecards(dateFrom: string, dateTo: string): Promise<EmailScorecard[]> {
+  const { user } = await fetchAllCallRows(dateFrom, dateTo);
+  return user;
+}
+
+export async function fetchCompanyScorecards(dateFrom: string, dateTo: string): Promise<EmailScorecard[]> {
+  const { company } = await fetchAllCallRows(dateFrom, dateTo);
+  return company;
+}
+

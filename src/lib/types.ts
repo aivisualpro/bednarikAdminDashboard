@@ -39,4 +39,5 @@ export interface CallScorecard {
 export interface ScorecardResponse {
   emails: EmailScorecard[];
   calls: CallScorecard[];
+  company: EmailScorecard[];
 }
