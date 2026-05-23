@@ -138,11 +138,11 @@ export default function UserSummaryTable({ data, prevData, title }: UserSummaryT
       )
     : null;
 
-  function renderMetricCells(val: number, prevVal: number | undefined, isTime: boolean, showTrend: boolean) {
+  function renderMetricCells(key: string, val: number, prevVal: number | undefined, isTime: boolean, showTrend: boolean) {
     const day = val / 5;
     const hour = val / 40;
     return (
-      <>
+      <Fragment key={key}>
         <td className="px-2 py-2.5 text-center text-xs text-gray-800 tabular-nums whitespace-nowrap">
           <div className="flex items-center justify-center gap-1.5">
             <span>{fmtVal(val, isTime)}</span>
@@ -157,7 +157,7 @@ export default function UserSummaryTable({ data, prevData, title }: UserSummaryT
         <td className="px-2 py-2.5 text-center text-xs text-gray-500 tabular-nums whitespace-nowrap border-r border-gray-100">
           {fmtVal(hour, isTime)}
         </td>
-      </>
+      </Fragment>
     );
   }
 
@@ -218,6 +218,7 @@ export default function UserSummaryTable({ data, prevData, title }: UserSummaryT
                   </td>
                   {METRIC_KEYS.map((m) =>
                     renderMetricCells(
+                      m.key,
                       row[m.key] as number,
                       hasPrev ? (prev[m.key] as number) : undefined,
                       m.isTime,
@@ -237,6 +238,7 @@ export default function UserSummaryTable({ data, prevData, title }: UserSummaryT
               </td>
               {METRIC_KEYS.map((m) =>
                 renderMetricCells(
+                  `total-${m.key}`,
                   totals[m.key] as number,
                   prevTotals ? (prevTotals[m.key] as number) : undefined,
                   m.isTime,
