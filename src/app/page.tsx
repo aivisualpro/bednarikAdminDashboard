@@ -8,6 +8,7 @@ import ChartSection from "@/components/ChartSection";
 import DateRangePicker from "@/components/DateRangePicker";
 import ScorecardTable from "@/components/ScorecardTable";
 import CallsScorecardTable from "@/components/CallsScorecardTable";
+import CallsTrendChart from "@/components/CallsTrendChart";
 import UserSummaryTable from "@/components/UserSummaryTable";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -406,6 +407,10 @@ export default function DashboardPage() {
                 title="Activities"
                 data={data.emails}
                 prevData={prevData?.emails}
+              />
+              <CallsTrendChart
+                title="Call & Text Trends (Weekly)"
+                data={data.emails}
               />
               <CallsScorecardTable
                 title="Call & Text Scorecard"
