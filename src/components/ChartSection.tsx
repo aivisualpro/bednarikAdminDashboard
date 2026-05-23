@@ -88,7 +88,7 @@ export default function ChartSection({
                 dataKey={bar.dataKey}
                 position="top"
                 style={{ fontSize: 10, fill: "#6B7280", fontWeight: 500 }}
-                formatter={(v: number) => (v > 0 ? v.toLocaleString() : "")}
+                formatter={(v: string | number | undefined) => (Number(v) > 0 ? Number(v).toLocaleString() : "")}
               />
             </Bar>
           ))}
