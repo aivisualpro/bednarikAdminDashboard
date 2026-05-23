@@ -1,14 +1,15 @@
 "use client";
 
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 import type { EmailScorecard } from "@/lib/types";
 
@@ -17,13 +18,10 @@ interface CallsTrendChartProps {
   title: string;
 }
 
-interface WeekData {
-  week: string;
-  totalCalls: number;
-  answered: number;
-  outbound: number;
-  textsSent: number;
-}
+const USER_COLORS = [
+  "#111827", "#059669", "#2563EB", "#D97706", "#7C3AED",
+  "#DC2626", "#0891B2", "#4F46E5", "#B91C1C", "#065F46",
+];
 
 function getWeekLabel(dateStr: string): string {
   const d = new Date(dateStr);
@@ -32,38 +30,41 @@ function getWeekLabel(dateStr: string): string {
   return `${month} ${day}`;
 }
 
-function aggregateByWeek(data: EmailScorecard[]): WeekData[] {
-  const weekMap = new Map<string, WeekData>();
+function buildStackedData(data: EmailScorecard[]) {
+  // Get unique users
+  const userSet = new Set<string>();
+  for (const row of data) {
+    if (row.user) userSet.add(row.user);
+  }
+  const users = Array.from(userSet).sort();
+
+  // Group by week (startDate)
+  const weekMap = new Map<string, { label: string; [key: string]: number | string }>();
 
   for (const row of data) {
     const key = row.startDate;
-    const label = `${getWeekLabel(row.startDate)} – ${getWeekLabel(row.endDate)}`;
-
     if (!weekMap.has(key)) {
-      weekMap.set(key, {
-        week: label,
-        totalCalls: 0,
-        answered: 0,
-        outbound: 0,
-        textsSent: 0,
-      });
+      const label = `${getWeekLabel(row.startDate)} – ${getWeekLabel(row.endDate)}`;
+      const entry: Record<string, number | string> = { week: label, _sort: key };
+      for (const u of users) entry[u] = 0;
+      weekMap.set(key, entry);
     }
-
     const w = weekMap.get(key)!;
-    w.totalCalls += row.callsTotal;
-    w.answered += row.callsAnsweredTotal;
-    w.outbound += row.callsOutbound;
-    w.textsSent += row.textSentTotal;
+    w[row.user] = (Number(w[row.user]) || 0) + row.callsTotal;
   }
 
-  // Sort by date
-  return Array.from(weekMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, v]) => v);
+  const chartData = Array.from(weekMap.values()).sort((a, b) =>
+    String(a._sort).localeCompare(String(b._sort))
+  );
+
+  // Remove sort key
+  for (const d of chartData) delete d._sort;
+
+  return { chartData, users };
 }
 
 export default function CallsTrendChart({ data, title }: CallsTrendChartProps) {
-  const chartData = aggregateByWeek(data);
+  const { chartData, users } = buildStackedData(data);
 
   if (chartData.length === 0) {
     return (
@@ -79,10 +80,11 @@ export default function CallsTrendChart({ data, title }: CallsTrendChartProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4">{title}</h3>
-      <ResponsiveContainer width="100%" height={320}>
-        <LineChart
+      <ResponsiveContainer width="100%" height={360}>
+        <BarChart
           data={chartData}
-          margin={{ top: 8, right: 16, left: 0, bottom: 4 }}
+          margin={{ top: 20, right: 16, left: 0, bottom: 4 }}
+          barCategoryGap="15%"
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
           <XAxis
@@ -90,9 +92,9 @@ export default function CallsTrendChart({ data, title }: CallsTrendChartProps) {
             tick={{ fontSize: 11, fill: "#6B7280" }}
             axisLine={{ stroke: "#E5E7EB" }}
             tickLine={false}
-            angle={-30}
+            angle={-25}
             textAnchor="end"
-            height={60}
+            height={55}
           />
           <YAxis
             tick={{ fontSize: 12, fill: "#6B7280" }}
@@ -108,49 +110,37 @@ export default function CallsTrendChart({ data, title }: CallsTrendChartProps) {
               fontSize: "13px",
               boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
             }}
+            cursor={{ fill: "#F9FAFB" }}
           />
           <Legend
             wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-            iconType="circle"
-            iconSize={8}
+            iconType="rect"
+            iconSize={10}
           />
-          <Line
-            type="monotone"
-            dataKey="totalCalls"
-            name="Total Calls"
-            stroke="#111827"
-            strokeWidth={2}
-            dot={{ r: 3, fill: "#111827" }}
-            activeDot={{ r: 5 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="answered"
-            name="Answered"
-            stroke="#059669"
-            strokeWidth={2}
-            dot={{ r: 3, fill: "#059669" }}
-            activeDot={{ r: 5 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="outbound"
-            name="Outbound"
-            stroke="#6B7280"
-            strokeWidth={2}
-            dot={{ r: 3, fill: "#6B7280" }}
-            activeDot={{ r: 5 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="textsSent"
-            name="Texts Sent"
-            stroke="#2563EB"
-            strokeWidth={2}
-            dot={{ r: 3, fill: "#2563EB" }}
-            activeDot={{ r: 5 }}
-          />
-        </LineChart>
+          {users.map((user, i) => (
+            <Bar
+              key={user}
+              dataKey={user}
+              name={user}
+              stackId="calls"
+              fill={USER_COLORS[i % USER_COLORS.length]}
+              radius={i === users.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+            >
+              {i === users.length - 1 && (
+                <LabelList
+                  valueAccessor={(entry: Record<string, number | string>) => {
+                    let total = 0;
+                    for (const u of users) total += Number(entry[u]) || 0;
+                    return total;
+                  }}
+                  position="top"
+                  style={{ fontSize: 11, fill: "#374151", fontWeight: 600 }}
+                  formatter={(v: number) => (v > 0 ? v.toLocaleString() : "")}
+                />
+              )}
+            </Bar>
+          ))}
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
