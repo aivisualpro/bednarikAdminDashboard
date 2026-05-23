@@ -47,7 +47,7 @@ function buildStackedData(data: EmailScorecard[]) {
       const label = `${getWeekLabel(row.startDate)} – ${getWeekLabel(row.endDate)}`;
       const entry: Record<string, number | string> = { week: label, _sort: key };
       for (const u of users) entry[u] = 0;
-      weekMap.set(key, entry);
+      weekMap.set(key, entry as { label: string; [key: string]: number | string });
     }
     const w = weekMap.get(key)!;
     w[row.user] = (Number(w[row.user]) || 0) + row.callsTotal;
@@ -128,14 +128,14 @@ export default function CallsTrendChart({ data, title }: CallsTrendChartProps) {
             >
               {i === users.length - 1 && (
                 <LabelList
-                  valueAccessor={(entry: Record<string, number | string>) => {
+                  valueAccessor={((entry: Record<string, number | string>) => {
                     let total = 0;
                     for (const u of users) total += Number(entry[u]) || 0;
                     return total;
-                  }}
+                  }) as never}
                   position="top"
                   style={{ fontSize: 11, fill: "#374151", fontWeight: 600 }}
-                  formatter={(v: number) => (v > 0 ? v.toLocaleString() : "")}
+                  formatter={((v: never) => (Number(v) > 0 ? Number(v).toLocaleString() : "")) as never}
                 />
               )}
             </Bar>
