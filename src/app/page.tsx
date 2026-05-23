@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { ScorecardResponse, EmailScorecard, CallScorecard } from "@/lib/types";
 import KpiCard from "@/components/KpiCard";
 import DataTable, { type Column } from "@/components/DataTable";
@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<ScorecardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoFetched = useRef(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -93,6 +94,36 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }, [dateFrom, dateTo]);
+
+  // ── Read URL query params & auto-fetch ──────────────────────────────────
+  useEffect(() => {
+    if (autoFetched.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const qFrom = params.get("dateFrom");
+    const qTo = params.get("dateTo");
+    if (qFrom && qTo) {
+      // Convert MM/DD/YYYY → YYYY-MM-DD if needed
+      const toIso = (d: string) => {
+        const slash = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (slash) {
+          return `${slash[3]}-${slash[1].padStart(2, "0")}-${slash[2].padStart(2, "0")}`;
+        }
+        return d; // already YYYY-MM-DD
+      };
+      const isoFrom = toIso(qFrom);
+      const isoTo = toIso(qTo);
+      setDateFrom(isoFrom);
+      setDateTo(isoTo);
+      autoFetched.current = true;
+    }
+  }, []);
+
+  // Auto-fetch after URL params are set
+  useEffect(() => {
+    if (autoFetched.current && !data && !loading) {
+      fetchData();
+    }
+  }, [dateFrom, dateTo, data, loading, fetchData]);
 
   // ── Aggregated KPIs ─────────────────────────────────────────────────────
   const kpis = useMemo(() => {

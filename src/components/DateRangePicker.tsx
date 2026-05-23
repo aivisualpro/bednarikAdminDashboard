@@ -77,12 +77,16 @@ function DateInput({
       id={id}
       type="text"
       inputMode="numeric"
+      autoComplete="off"
+      data-form-type="other"
+      data-lpignore="true"
       placeholder="MM/DD/YYYY"
       maxLength={10}
       value={display}
       onChange={(e) => handleChange(e.target.value)}
       onBlur={handleBlur}
       className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 outline-none focus:border-gray-400 transition-colors w-[130px] tabular-nums tracking-wide"
+      style={{ WebkitAppearance: "none", MozAppearance: "textfield" }}
     />
   );
 }
@@ -99,26 +103,26 @@ export default function DateRangePicker({
     <div className="flex items-center gap-3 flex-wrap">
       <div className="flex items-center gap-2">
         <label
-          htmlFor="dateFrom"
+          htmlFor="rangeStart"
           className="text-xs font-medium text-gray-500 uppercase tracking-wider"
         >
           From
         </label>
         <DateInput
-          id="dateFrom"
+          id="rangeStart"
           value={dateFrom}
           onChange={onDateFromChange}
         />
       </div>
       <div className="flex items-center gap-2">
         <label
-          htmlFor="dateTo"
+          htmlFor="rangeEnd"
           className="text-xs font-medium text-gray-500 uppercase tracking-wider"
         >
           To
         </label>
         <DateInput
-          id="dateTo"
+          id="rangeEnd"
           value={dateTo}
           onChange={onDateToChange}
         />
