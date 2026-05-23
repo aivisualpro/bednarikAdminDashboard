@@ -127,7 +127,7 @@ export async function fetchEmailScorecards(
 // Actual column order: _id, startDate, endDate, type, userId, user,
 //   callsTotal, callsMissed, callsMissedUnanswered, callsMissedAbandoned,
 //   callsAnsweredTotal, callsAnsweredTeamMember, callsAnsweredSona,
-//   callsOutbound, totalTimeOnCalls, textSentTotal, textReceivedTotal
+//   callsOutbound, totalTimeOnCalls, textSentTotal, textReceivedTotal, Image
 export async function fetchCallScorecards(
   dateFrom: string,
   dateTo: string
@@ -135,7 +135,7 @@ export async function fetchCallScorecards(
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: "AdminScorecardCalls!A:Q",
+    range: "AdminScorecardCalls!A:R",
   });
 
   const rows = res.data.values;
@@ -168,5 +168,6 @@ export async function fetchCallScorecards(
       totalTimeOnCalls: parseDuration(row[14]),
       textSentTotal: parseNumber(row[15]),
       textReceivedTotal: parseNumber(row[16]),
+      image: row[17] || "",
     }));
 }

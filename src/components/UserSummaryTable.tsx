@@ -1,6 +1,7 @@
 "use client";
 
 import type { EmailScorecard } from "@/lib/types";
+import Image from "next/image";
 
 interface UserSummaryTableProps {
   data: EmailScorecard[];
@@ -16,6 +17,7 @@ function formatTime(seconds: number): string {
 
 interface UserRow {
   user: string;
+  image: string;
   totalCalls: number;
   outgoingCalls: number;
   answeredCalls: number;
@@ -31,6 +33,7 @@ function aggregateByUser(data: EmailScorecard[]): UserRow[] {
     if (!map.has(name)) {
       map.set(name, {
         user: name,
+        image: row.image || "",
         totalCalls: 0,
         outgoingCalls: 0,
         answeredCalls: 0,
@@ -44,10 +47,41 @@ function aggregateByUser(data: EmailScorecard[]): UserRow[] {
     u.answeredCalls += row.callsAnsweredTotal;
     u.timeOnCalls += row.totalTimeOnCalls;
     u.sentMessages += row.textSentTotal;
+    // Keep the first non-empty image
+    if (!u.image && row.image) u.image = row.image;
   }
 
   return Array.from(map.values()).sort((a, b) =>
     a.user.localeCompare(b.user)
+  );
+}
+
+function UserAvatar({ src, name }: { src: string; name: string }) {
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={name}
+        width={32}
+        height={32}
+        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+        unoptimized
+      />
+    );
+  }
+
+  // Fallback: initials avatar
+  return (
+    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+      <span className="text-xs font-medium text-gray-500">{initials}</span>
+    </div>
   );
 }
 
@@ -115,8 +149,11 @@ export default function UserSummaryTable({
                 key={row.user}
                 className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
               >
-                <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
-                  {row.user}
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="flex items-center gap-3">
+                    <UserAvatar src={row.image} name={row.user} />
+                    <span className="text-gray-900 font-medium">{row.user}</span>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right text-gray-700 tabular-nums">
                   {row.totalCalls.toLocaleString()}
@@ -138,7 +175,10 @@ export default function UserSummaryTable({
             {/* Totals row */}
             <tr className="bg-gray-50 border-t border-gray-200 font-semibold">
               <td className="px-4 py-3 text-gray-900">
-                Total
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8" />
+                  <span>Total</span>
+                </div>
               </td>
               <td className="px-4 py-3 text-right text-gray-900 tabular-nums">
                 {totals.totalCalls.toLocaleString()}

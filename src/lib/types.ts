@@ -17,6 +17,7 @@ export interface EmailScorecard {
   totalTimeOnCalls: number;
   textSentTotal: number;
   textReceivedTotal: number;
+  image: string;
 }
 
 // ── AdminScorecardCalls sheet (ticket & message metrics) ──────────────────────

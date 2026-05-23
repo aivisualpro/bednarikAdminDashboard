@@ -378,7 +378,7 @@ export default function DashboardPage() {
             {/* Scorecard Tables */}
             <section className="space-y-4">
               <UserSummaryTable
-                title="User Summary"
+                title="Activities"
                 data={data.emails}
               />
               <CallsScorecardTable
