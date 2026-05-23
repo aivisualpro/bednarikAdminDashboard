@@ -89,7 +89,9 @@ const GROUP_COLORS = [
   { header: "bg-violet-700 text-white", sub: "bg-violet-50 text-violet-700" },
 ];
 
-const METRIC_KEYS: { key: keyof UserRow; label: string; isTime: boolean }[] = [
+type MetricKey = "totalCalls" | "outgoingCalls" | "answeredCalls" | "timeOnCalls" | "sentMessages";
+
+const METRIC_KEYS: { key: MetricKey; label: string; isTime: boolean }[] = [
   { key: "totalCalls", label: "Total Calls", isTime: false },
   { key: "outgoingCalls", label: "Outgoing Calls", isTime: false },
   { key: "answeredCalls", label: "Answered Calls", isTime: false },
