@@ -220,8 +220,8 @@ export default function DashboardPage() {
 
   // ── Tab buttons ─────────────────────────────────────────────────────────
   const tabs = [
-    { id: "calls" as const, label: "Admin Scorecard Calls" },
-    { id: "emails" as const, label: "Admin Scorecard Email" },
+    { id: "calls" as const, label: "Calls" },
+    { id: "emails" as const, label: "Email" },
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────
