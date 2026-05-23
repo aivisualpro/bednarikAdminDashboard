@@ -93,6 +93,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoFetched = useRef(false);
+  const [activeTab, setActiveTab] = useState<"calls" | "emails">("calls");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -128,14 +129,15 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search);
     const qFrom = params.get("dateFrom");
     const qTo = params.get("dateTo");
+    const qTab = params.get("tab");
+    if (qTab === "calls" || qTab === "emails") setActiveTab(qTab);
     if (qFrom && qTo) {
-      // Convert MM/DD/YYYY → YYYY-MM-DD if needed
       const toIso = (d: string) => {
         const slash = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
         if (slash) {
           return `${slash[3]}-${slash[1].padStart(2, "0")}-${slash[2].padStart(2, "0")}`;
         }
-        return d; // already YYYY-MM-DD
+        return d;
       };
       const isoFrom = toIso(qFrom);
       const isoTo = toIso(qTo);
@@ -153,10 +155,9 @@ export default function DashboardPage() {
   }, [dateFrom, dateTo, data, loading, fetchData]);
 
   // ── Aggregated KPIs ─────────────────────────────────────────────────────
-  const kpis = useMemo(() => {
+  const callsKpis = useMemo(() => {
     if (!data) return null;
-    const { emails, calls } = data;
-
+    const { emails } = data;
     const totalCalls = emails.reduce((s, r) => s + r.callsTotal, 0);
     const totalAnswered = emails.reduce((s, r) => s + r.callsAnsweredTotal, 0);
     const totalMissed = emails.reduce((s, r) => s + r.callsMissed, 0);
@@ -164,30 +165,26 @@ export default function DashboardPage() {
     const totalTime = emails.reduce((s, r) => s + r.totalTimeOnCalls, 0);
     const totalTextsSent = emails.reduce((s, r) => s + r.textSentTotal, 0);
     const totalTextsRecv = emails.reduce((s, r) => s + r.textReceivedTotal, 0);
+    return {
+      totalCalls, totalAnswered, totalMissed, totalOutbound, totalTime,
+      totalTextsSent, totalTextsRecv,
+      answerRate: pct(totalAnswered, totalCalls),
+      missRate: pct(totalMissed, totalCalls),
+    };
+  }, [data]);
+
+  const emailsKpis = useMemo(() => {
+    if (!data) return null;
+    const { calls } = data;
     const totalTicketsRecv = calls.reduce((s, r) => s + r.totalTicketsReceived, 0);
     const totalTicketsClosed = calls.reduce((s, r) => s + r.totalTicketsClosed, 0);
     const totalMsgsSent = calls.reduce((s, r) => s + r.messagesSent, 0);
     const totalMsgsRecv = calls.reduce((s, r) => s + r.messagesReceived, 0);
-    const avgTicketsDay =
-      calls.length > 0
-        ? calls.reduce((s, r) => s + r.averageTicketsDay, 0) / calls.length
-        : 0;
-
+    const avgTicketsDay = calls.length > 0
+      ? calls.reduce((s, r) => s + r.averageTicketsDay, 0) / calls.length
+      : 0;
     return {
-      totalCalls,
-      totalAnswered,
-      totalMissed,
-      totalOutbound,
-      totalTime,
-      totalTextsSent,
-      totalTextsRecv,
-      totalTicketsRecv,
-      totalTicketsClosed,
-      totalMsgsSent,
-      totalMsgsRecv,
-      avgTicketsDay,
-      answerRate: pct(totalAnswered, totalCalls),
-      missRate: pct(totalMissed, totalCalls),
+      totalTicketsRecv, totalTicketsClosed, totalMsgsSent, totalMsgsRecv, avgTicketsDay,
       closeRate: pct(totalTicketsClosed, totalTicketsRecv),
     };
   }, [data]);
@@ -195,14 +192,10 @@ export default function DashboardPage() {
   // ── Chart data ──────────────────────────────────────────────────────────
   const callsChartData = useMemo(() => {
     if (!data) return [];
-    const byUser: Record<
-      string,
-      { user: string; total: number; answered: number; outbound: number; textsSent: number }
-    > = {};
+    const byUser: Record<string, { user: string; total: number; answered: number; outbound: number; textsSent: number }> = {};
     for (const row of data.emails) {
       const name = row.user || "Unknown";
-      if (!byUser[name])
-        byUser[name] = { user: name, total: 0, answered: 0, outbound: 0, textsSent: 0 };
+      if (!byUser[name]) byUser[name] = { user: name, total: 0, answered: 0, outbound: 0, textsSent: 0 };
       byUser[name].total += row.callsTotal;
       byUser[name].answered += row.callsAnsweredTotal;
       byUser[name].outbound += row.callsOutbound;
@@ -213,34 +206,23 @@ export default function DashboardPage() {
 
   const ticketsChartData = useMemo(() => {
     if (!data) return [];
-    const byUser: Record<
-      string,
-      { user: string; received: number; closed: number }
-    > = {};
+    const byUser: Record<string, { user: string; received: number; closed: number; msgsSent: number; msgsRecv: number }> = {};
     for (const row of data.calls) {
       const name = row.user || "Unknown";
-      if (!byUser[name])
-        byUser[name] = { user: name, received: 0, closed: 0 };
+      if (!byUser[name]) byUser[name] = { user: name, received: 0, closed: 0, msgsSent: 0, msgsRecv: 0 };
       byUser[name].received += row.totalTicketsReceived;
       byUser[name].closed += row.totalTicketsClosed;
+      byUser[name].msgsSent += row.messagesSent;
+      byUser[name].msgsRecv += row.messagesReceived;
     }
     return Object.values(byUser);
   }, [data]);
 
-  const messagesChartData = useMemo(() => {
-    if (!data) return [];
-    const byUser: Record<
-      string,
-      { user: string; textsSent: number }
-    > = {};
-    for (const row of data.emails) {
-      const name = row.user || "Unknown";
-      if (!byUser[name])
-        byUser[name] = { user: name, textsSent: 0 };
-      byUser[name].textsSent += row.textSentTotal;
-    }
-    return Object.values(byUser);
-  }, [data]);
+  // ── Tab buttons ─────────────────────────────────────────────────────────
+  const tabs = [
+    { id: "calls" as const, label: "Admin Scorecard Calls" },
+    { id: "emails" as const, label: "Admin Scorecard Email" },
+  ];
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
@@ -248,10 +230,26 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
         <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex items-center justify-between flex-wrap gap-3">
-          <div>
+          <div className="flex items-center gap-4 sm:gap-6">
             <h1 className="text-lg font-semibold text-gray-900">
               Admin Scorecard
             </h1>
+            {/* Tabs */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
+                    activeTab === tab.id
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
           <DateRangePicker
             dateFrom={dateFrom}
@@ -305,7 +303,7 @@ export default function DashboardPage() {
         {loading && (
           <div className="space-y-6 animate-pulse">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              {Array.from({ length: 10 }).map((_, i) => (
+              {Array.from({ length: 7 }).map((_, i) => (
                 <div
                   key={i}
                   className="bg-white border border-gray-200 rounded-lg px-5 py-4 h-20"
@@ -315,70 +313,28 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-white border border-gray-200 rounded-lg h-80" />
-              <div className="bg-white border border-gray-200 rounded-lg h-80" />
-            </div>
+            <div className="bg-white border border-gray-200 rounded-lg h-80" />
           </div>
         )}
 
-        {/* Dashboard content */}
-        {data && kpis && !loading && (
+        {/* ═══════════════════ CALLS TAB ═══════════════════ */}
+        {data && callsKpis && !loading && activeTab === "calls" && (
           <>
             {/* KPI Cards */}
             <section>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-                <KpiCard
-                  label="Total Calls"
-                  value={kpis.totalCalls.toLocaleString()}
-                />
-                <KpiCard
-                  label="Answered"
-                  value={kpis.totalAnswered.toLocaleString()}
-                  subtitle={kpis.answerRate}
-                  trend="up"
-                />
-                <KpiCard
-                  label="Missed"
-                  value={kpis.totalMissed.toLocaleString()}
-                  subtitle={kpis.missRate}
-                  trend="down"
-                />
-                <KpiCard
-                  label="Outbound"
-                  value={kpis.totalOutbound.toLocaleString()}
-                />
-                <KpiCard
-                  label="Time on Calls"
-                  value={formatMinutes(kpis.totalTime)}
-                />
-                <KpiCard
-                  label="Texts Sent"
-                  value={kpis.totalTextsSent.toLocaleString()}
-                />
-                <KpiCard
-                  label="Texts Received"
-                  value={kpis.totalTextsRecv.toLocaleString()}
-                />
-                <KpiCard
-                  label="Tickets Received"
-                  value={kpis.totalTicketsRecv.toLocaleString()}
-                />
-                <KpiCard
-                  label="Tickets Closed"
-                  value={kpis.totalTicketsClosed.toLocaleString()}
-                  subtitle={kpis.closeRate}
-                  trend="up"
-                />
-                <KpiCard
-                  label="Avg Tickets / Day"
-                  value={kpis.avgTicketsDay.toFixed(1)}
-                />
+                <KpiCard label="Total Calls" value={callsKpis.totalCalls.toLocaleString()} />
+                <KpiCard label="Answered" value={callsKpis.totalAnswered.toLocaleString()} subtitle={callsKpis.answerRate} trend="up" />
+                <KpiCard label="Missed" value={callsKpis.totalMissed.toLocaleString()} subtitle={callsKpis.missRate} trend="down" />
+                <KpiCard label="Outbound" value={callsKpis.totalOutbound.toLocaleString()} />
+                <KpiCard label="Time on Calls" value={formatMinutes(callsKpis.totalTime)} />
+                <KpiCard label="Texts Sent" value={callsKpis.totalTextsSent.toLocaleString()} />
+                <KpiCard label="Texts Received" value={callsKpis.totalTextsRecv.toLocaleString()} />
               </div>
             </section>
 
             {/* Charts */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            <section>
               <ChartSection
                 title="Calls Breakdown by User"
                 data={callsChartData}
@@ -390,18 +346,9 @@ export default function DashboardPage() {
                   { dataKey: "textsSent", label: "Texts Sent", color: "#2563EB" },
                 ]}
               />
-              <ChartSection
-                title="Tickets by User"
-                data={ticketsChartData}
-                xAxisKey="user"
-                bars={[
-                  { dataKey: "received", label: "Received", color: "#111827" },
-                  { dataKey: "closed", label: "Closed", color: "#059669" },
-                ]}
-              />
             </section>
 
-            {/* Scorecard Tables */}
+            {/* Tables */}
             <section className="space-y-4">
               <UserSummaryTable
                 title="Activities"
@@ -416,6 +363,41 @@ export default function DashboardPage() {
                 title="Call & Text Scorecard"
                 data={data.emails}
               />
+            </section>
+          </>
+        )}
+
+        {/* ═══════════════════ EMAILS TAB ═══════════════════ */}
+        {data && emailsKpis && !loading && activeTab === "emails" && (
+          <>
+            {/* KPI Cards */}
+            <section>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                <KpiCard label="Tickets Received" value={emailsKpis.totalTicketsRecv.toLocaleString()} />
+                <KpiCard label="Tickets Closed" value={emailsKpis.totalTicketsClosed.toLocaleString()} subtitle={emailsKpis.closeRate} trend="up" />
+                <KpiCard label="Avg Tickets / Day" value={emailsKpis.avgTicketsDay.toFixed(1)} />
+                <KpiCard label="Messages Sent" value={emailsKpis.totalMsgsSent.toLocaleString()} />
+                <KpiCard label="Messages Received" value={emailsKpis.totalMsgsRecv.toLocaleString()} />
+              </div>
+            </section>
+
+            {/* Charts */}
+            <section>
+              <ChartSection
+                title="Tickets & Messages by User"
+                data={ticketsChartData}
+                xAxisKey="user"
+                bars={[
+                  { dataKey: "received", label: "Tickets Received", color: "#111827" },
+                  { dataKey: "closed", label: "Tickets Closed", color: "#059669" },
+                  { dataKey: "msgsSent", label: "Messages Sent", color: "#2563EB" },
+                  { dataKey: "msgsRecv", label: "Messages Received", color: "#6B7280" },
+                ]}
+              />
+            </section>
+
+            {/* Tables */}
+            <section className="space-y-4">
               <ScorecardTable
                 title="Ticket & Message Scorecard"
                 data={data.calls}
@@ -439,3 +421,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
