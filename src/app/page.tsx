@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import type { ScorecardResponse, EmailScorecard, CallScorecard } from "@/lib/types";
 import KpiCard from "@/components/KpiCard";
 import DataTable, { type Column } from "@/components/DataTable";
@@ -88,7 +88,6 @@ export default function DashboardPage() {
   const [prevData, setPrevData] = useState<ScorecardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const autoFetched = useRef(false);
   const [activeTab, setActiveTab] = useState<"calls" | "emails">("calls");
 
   const fetchData = useCallback(async () => {
@@ -121,7 +120,6 @@ export default function DashboardPage() {
 
   // ── Read URL query params & auto-fetch ──────────────────────────────────
   useEffect(() => {
-    if (autoFetched.current) return;
     const params = new URLSearchParams(window.location.search);
     const qFrom = params.get("dateFrom");
     const qTo = params.get("dateTo");
@@ -141,20 +139,13 @@ export default function DashboardPage() {
         }
         return d;
       };
-      const isoFrom = toIso(qFrom);
-      const isoTo = toIso(qTo);
-      setDateFrom(isoFrom);
-      setDateTo(isoTo);
+      setDateFrom(toIso(qFrom));
+      setDateTo(toIso(qTo));
     }
-    autoFetched.current = true;
+    // Auto-fetch once on mount (use setTimeout to let state settle after setDate calls)
+    setTimeout(() => fetchData(), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Auto-fetch after URL params are set
-  useEffect(() => {
-    if (autoFetched.current && !data && !loading) {
-      fetchData();
-    }
-  }, [dateFrom, dateTo, data, loading, fetchData]);
 
   // ── Aggregated KPIs ─────────────────────────────────────────────────────
   const callsKpis = useMemo(() => {
