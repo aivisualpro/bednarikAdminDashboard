@@ -168,10 +168,12 @@ export default function DashboardPage() {
 
   const emailsKpis = useMemo(() => {
     if (!data) return null;
-    const { calls } = data;
-    const totalTicketsRecv = calls.reduce((s, r) => s + r.totalTicketsReceived, 0);
+    const { calls, companyEmails } = data;
+    // Tickets Received & Messages Sent come from Company rows
+    const totalTicketsRecv = companyEmails.reduce((s, r) => s + r.totalTicketsReceived, 0);
+    const totalMsgsSent = companyEmails.reduce((s, r) => s + r.messagesSent, 0);
+    // Tickets Closed & Messages Received come from User rows
     const totalTicketsClosed = calls.reduce((s, r) => s + r.totalTicketsClosed, 0);
-    const totalMsgsSent = calls.reduce((s, r) => s + r.messagesSent, 0);
     const totalMsgsRecv = calls.reduce((s, r) => s + r.messagesReceived, 0);
     return {
       totalTicketsRecv, totalTicketsClosed, totalMsgsSent, totalMsgsRecv,
